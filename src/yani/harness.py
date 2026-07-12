@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from .state import State
 from .tools import ToolExecutor
 from .observability import Logger
+from . import users
 import json
 
 load_dotenv()
@@ -140,29 +141,37 @@ def loop(user_message: str):
 
     llm = LLM(get_client(), MODEL)
     state = State()
-    state.load()
 
-    state.add_user_message(user_message)
-    logger.log_line(step="init", user_message=user_message)
+    # Locked for the whole turn, not just state.load()/save(): every tool a
+    # turn runs (create_concept, tick_concept_progress, write_learning_record,
+    # ...) writes this same learner's files too, and none of those do their
+    # own locking (users.learner_lock()'s docstring). A second concurrent
+    # turn for the same learner queues behind this one rather than
+    # interleaving its reads/writes with it.
+    with users.learner_lock():
+        state.load()
 
-    has_more_work = True
-    steps_taken = 0
-    while has_more_work:
-        steps_taken += 1
-        if steps_taken > MAX_STEPS:
-            logger.log_line(step="max_steps_reached", max_steps=MAX_STEPS)
-            yield {"type": "error", "message": f"turn aborted after {MAX_STEPS} steps"}
-            break
-        for event in step(llm, state, tool_executor):
-            if event["type"] == "text.delta":
-                yield event
-            elif event["type"] == "step.done":
-                has_more_work = event["has_more_work"]
-            else:
-                yield event
+        state.add_user_message(user_message)
+        logger.log_line(step="init", user_message=user_message)
 
-    reply = state.get_last_reply()
-    state.save()
+        has_more_work = True
+        steps_taken = 0
+        while has_more_work:
+            steps_taken += 1
+            if steps_taken > MAX_STEPS:
+                logger.log_line(step="max_steps_reached", max_steps=MAX_STEPS)
+                yield {"type": "error", "message": f"turn aborted after {MAX_STEPS} steps"}
+                break
+            for event in step(llm, state, tool_executor):
+                if event["type"] == "text.delta":
+                    yield event
+                elif event["type"] == "step.done":
+                    has_more_work = event["has_more_work"]
+                else:
+                    yield event
+
+        reply = state.get_last_reply()
+        state.save()
     logger.log_line(step="end", final_reponse=reply)
 
     yield {"type": "turn.done", "text_response": reply}

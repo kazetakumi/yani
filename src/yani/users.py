@@ -24,7 +24,9 @@ through learner_home() below rather than hardcoding a workspace root, so
 setting the current user for a request redirects all of them at once.
 """
 
+import contextlib
 import contextvars
+import fcntl
 import re
 from pathlib import Path
 
@@ -104,3 +106,27 @@ def ensure_learner_home(slug: str) -> Path:
     home = WORKSPACE_ROOT / slug
     (home / "workspace").mkdir(parents=True, exist_ok=True)
     return home
+
+
+@contextlib.contextmanager
+def learner_lock():
+    """Exclusive lock scoped to the current learner, held for one whole turn
+    (harness.py's loop()) or one /history read (docs/adr/0002-per-learner-
+    file-locking.md). state.py, surface_store.py, lesson_store.py, and
+    workspace.py all do unlocked read-modify-write against this learner's
+    files — safe only because, until now, exactly one request touched one
+    learner's files at a time. Concurrent multi-user identity (ADR 0001)
+    plus multi-process workers both break that assumption: two tabs of the
+    same learner, or two worker processes handling that learner's requests,
+    have no shared memory to coordinate through, only these files. A plain
+    OS advisory lock (flock) is enough — it's released automatically even
+    if the holding process dies, and different learners never contend since
+    each lock file lives inside that learner's own home directory."""
+    home = learner_home()
+    home.mkdir(parents=True, exist_ok=True)
+    with open(home / ".lock", "w") as f:
+        fcntl.flock(f, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(f, fcntl.LOCK_UN)

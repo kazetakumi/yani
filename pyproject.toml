@@ -15,6 +15,7 @@ dependencies = [
 
 [project.scripts]
 server = "yani.server:main"
+server-prod = "yani.server:serve"
 
 [build-system]
 requires = ["hatchling"]

@@ -14,9 +14,6 @@ from .state import State
 
 STATIC_DIR = Path(__file__).parent / "static"
 
-state = State()
-
-
 app = FastAPI()
 
 # Per-request identity (docs/adr/0001-per-request-cookie-identity.md): the
@@ -163,46 +160,56 @@ def get_history():
     """Rebuild the whole scroll — text AND surfaces, in conversation order
     (spec 0001, decision 7: lessons survive reloads). state.json stays a pure
     LLM transcript; each function_call entry tells us WHERE a surface (or a
-    whole lesson) appeared, and the durable surface store says WHAT it is."""
+    whole lesson) appeared, and the durable surface store says WHAT it is.
+
+    A request-local State() (not a shared one) plus users.learner_lock():
+    this used to load() into a module-level State shared by every request,
+    which is a real cross-learner data leak under FastAPI's threadpool for
+    sync handlers — a concurrent request for a different learner could
+    overwrite self.messages mid-iteration. The lock also keeps this from
+    reading state.json/surfaces.json mid-write while this learner's own
+    turn (harness.py's loop(), same lock) is still saving."""
     _require_current_user()
-    state.load()
-    items: list[dict] = []
-    for m in state.messages:
-        role = m.get("role")
-        if role in ("user", "assistant") and m.get("content"):
-            items.append({"kind": "text", "role": role, "content": m["content"]})
-        elif m.get("type") == "function_call" and m.get("name") == "create_surface":
-            try:
-                surface_id = json.loads(m["arguments"]).get("surface_id")
-            except (json.JSONDecodeError, TypeError):
-                continue
-            events = surface_store.replay_events(surface_id)
-            if events:
-                items.append({"kind": "ui", "events": events})
-        elif m.get("type") == "function_call_output":
-            # a teach_lesson ack carries the lesson's surface ids in order.
-            # Tool outputs persist as str(dict) — ast.literal_eval, not json.
-            try:
-                output = ast.literal_eval(m.get("output", ""))
-            except (ValueError, SyntaxError):
-                continue
-            if not isinstance(output, dict):
-                continue
-            if output.get("surface_ids"):
-                # spec 0002 acks (plan_lesson / start_lesson / next_block):
-                # each carries the surfaces it streamed, in order
-                events = []
-                for sid in output["surface_ids"]:
-                    events.extend(surface_store.replay_events(sid))
+    with users.learner_lock():
+        local_state = State()
+        local_state.load()
+        items: list[dict] = []
+        for m in local_state.messages:
+            role = m.get("role")
+            if role in ("user", "assistant") and m.get("content"):
+                items.append({"kind": "text", "role": role, "content": m["content"]})
+            elif m.get("type") == "function_call" and m.get("name") == "create_surface":
+                try:
+                    surface_id = json.loads(m["arguments"]).get("surface_id")
+                except (json.JSONDecodeError, TypeError):
+                    continue
+                events = surface_store.replay_events(surface_id)
                 if events:
                     items.append({"kind": "ui", "events": events})
-            elif "lesson_id" in output and "blocks" in output:
-                # legacy teach_lesson acks (pre-0002 transcripts)
-                events = surface_store.replay_events(f"{output['lesson_id']}-header")
-                for block in output.get("blocks", []):
-                    events.extend(surface_store.replay_events(block.get("surface_id", "")))
-                if events:
-                    items.append({"kind": "ui", "events": events})
+            elif m.get("type") == "function_call_output":
+                # a teach_lesson ack carries the lesson's surface ids in order.
+                # Tool outputs persist as str(dict) — ast.literal_eval, not json.
+                try:
+                    output = ast.literal_eval(m.get("output", ""))
+                except (ValueError, SyntaxError):
+                    continue
+                if not isinstance(output, dict):
+                    continue
+                if output.get("surface_ids"):
+                    # spec 0002 acks (plan_lesson / start_lesson / next_block):
+                    # each carries the surfaces it streamed, in order
+                    events = []
+                    for sid in output["surface_ids"]:
+                        events.extend(surface_store.replay_events(sid))
+                    if events:
+                        items.append({"kind": "ui", "events": events})
+                elif "lesson_id" in output and "blocks" in output:
+                    # legacy teach_lesson acks (pre-0002 transcripts)
+                    events = surface_store.replay_events(f"{output['lesson_id']}-header")
+                    for block in output.get("blocks", []):
+                        events.extend(surface_store.replay_events(block.get("surface_id", "")))
+                    if events:
+                        items.append({"kind": "ui", "events": events})
     return HistoryEndpointResponse(items=items)
 
 # Mounted last and at "/" with html=True: index.html is served at "/",
@@ -213,6 +220,7 @@ app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
 
 
 def main():
+    """Dev entrypoint — one process, reload=True."""
     import uvicorn
 
     # reload=True: re-import the app whenever package files change. Three
@@ -225,4 +233,31 @@ def main():
         port=8000,
         reload=True,
         reload_dirs=[str(Path(__file__).parent)],
+    )
+
+
+def serve():
+    """Production entrypoint — multiple worker processes, no reload.
+    uvicorn.run() doesn't accept both `workers` and `reload=True`: workers
+    are separate OS processes that each re-import the app fresh, which is
+    incompatible with reload watching the same files live. Safe to use
+    workers>1 here specifically because users.learner_lock() (docs/adr/
+    0002-per-learner-file-locking.md) makes every learner's file writes
+    safe across processes, not just across threads in one process — that
+    lock didn't exist before this ADR, and workers must not be enabled
+    without it.
+
+    Defaults to 127.0.0.1, same as the dev server: this app has no
+    authentication (docs/adr/0001), so binding 0.0.0.0 puts every learner's
+    data on the network to anyone who can reach the port. Set YANI_HOST
+    explicitly if you actually intend to expose it beyond localhost."""
+    import os
+    import uvicorn
+
+    uvicorn.run(
+        "yani.server:app",
+        host=os.environ.get("YANI_HOST", "127.0.0.1"),
+        port=int(os.environ.get("YANI_PORT", "8000")),
+        workers=int(os.environ.get("YANI_WORKERS", "4")),
+        reload=False,
     )
