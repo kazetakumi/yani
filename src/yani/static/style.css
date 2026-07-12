@@ -134,6 +134,9 @@ body {
 
 header {
   flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   padding: 12px 20px;
   border-bottom: 2px dashed var(--warm-rule);
   font-family: 'Caveat', cursive;
@@ -142,6 +145,17 @@ header {
   color: var(--warm-accent);
   background: var(--page-bg);
 }
+
+#logout-btn {
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+}
+#logout-btn:hover { color: var(--warm-accent); }
 
 #chat {
   flex: 1 1 auto;
@@ -218,6 +232,14 @@ header {
   cursor: pointer;
 }
 #login-gate button:disabled { opacity: 0.5; cursor: default; }
+
+.login-error {
+  margin: 0;
+  text-align: center;
+  font-size: 0.95rem;
+  color: #a04f36;
+}
+.login-error[hidden] { display: none; }
 
 .row {
   display: flex;

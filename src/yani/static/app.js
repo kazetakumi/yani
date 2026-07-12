@@ -11,6 +11,13 @@ const sendEl = document.getElementById('send');
 const loginGateEl = document.getElementById('login-gate');
 const loginFormEl = document.getElementById('login-form');
 const loginNameEl = document.getElementById('login-name');
+const loginErrorEl = document.getElementById('login-error');
+const logoutBtnEl = document.getElementById('logout-btn');
+
+function showLoginError(message) {
+  loginErrorEl.textContent = message;
+  loginErrorEl.hidden = false;
+}
 
 function clearPlaceholder() {
   const p = chatEl.querySelector('.placeholder');
@@ -62,25 +69,34 @@ function loadHistory() {
 }
 
 // Name-entry gate (multi-user-workspaces map, ticket 03): on page load,
-// check whether a current user already exists. If so, skip straight to the
-// app — the whole point of persisting the current user server-side is that
-// you don't retype your name on every reload. Otherwise show the gate and
-// only load history once /login succeeds.
+// check whether this browser already carries an identity cookie. If so,
+// skip straight to the app — the whole point of the long-lived cookie is
+// that you don't retype your name on every reload. Otherwise show the gate
+// and only load history once /login succeeds.
 fetch('/whoami')
   .then(r => r.json())
   .then(({ user }) => {
     if (user) {
+      logoutBtnEl.hidden = false;
       loadHistory();
     } else {
       loginGateEl.hidden = false;
       loginNameEl.focus();
     }
+  })
+  .catch(() => {
+    // Can't tell whether a user's already logged in — surface the gate
+    // anyway so the page isn't just blank, and say why Start may not work.
+    loginGateEl.hidden = false;
+    loginNameEl.focus();
+    showLoginError("Can't reach the server — check your connection and reload the page.");
   });
 
 loginFormEl.addEventListener('submit', (e) => {
   e.preventDefault();
   const name = loginNameEl.value.trim();
   if (!name) return;
+  loginErrorEl.hidden = true;
   const submitEl = loginFormEl.querySelector('button');
   submitEl.disabled = true;
   fetch('/login', {
@@ -88,12 +104,28 @@ loginFormEl.addEventListener('submit', (e) => {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name }),
   })
-    .then(r => r.json())
+    .then(r => {
+      if (!r.ok) throw new Error(`login failed: ${r.status}`);
+      return r.json();
+    })
     .then(() => {
       loginGateEl.hidden = true;
+      logoutBtnEl.hidden = false;
       loadHistory();
     })
+    .catch(() => {
+      showLoginError("Couldn't reach the server — check your connection and try again.");
+    })
     .finally(() => { submitEl.disabled = false; });
+});
+
+// Switching identity on a shared browser (multi-user-workspaces map,
+// per-request cookie identity): the cookie is httpOnly, so JS can't just
+// clear it itself — it takes a server round-trip to expire it. A full page
+// reload afterward is the simplest way to reset all in-memory chat state
+// (message list, composer) rather than manually unwinding it here.
+logoutBtnEl.addEventListener('click', () => {
+  fetch('/logout', { method: 'POST' }).finally(() => location.reload());
 });
 
 // Transient "what's happening" line while tools run — removed the moment

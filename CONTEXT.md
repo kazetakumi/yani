@@ -122,3 +122,12 @@ _Avoid_: using "learning record" for raw evidence-log entries
 
 **Evidence**:
 What the learner actually demonstrated (quiz answers, explain-backs), arriving as UI actions. Coverage is not evidence.
+
+### Multi-user identity
+
+**Learner home**:
+One learner's private partition of durable state — their `about.md`, chat transcript, surface store, and their own Workspace. Distinct from Workspace: a learner home is the per-person container; Workspace is the teaching-memory content that lives inside one.
+
+**Learner identity**:
+Which learner a given browser's requests belong to, resolved fresh per request rather than shared globally by the server (see docs/adr/0001-per-request-cookie-identity.md). No password: whoever provides a learner's name is trusted to be that learner — the mechanism gives concurrent browsers independent, non-colliding identities, it does not authenticate them.
+_Avoid_: login, account (this app has neither passwords nor accounts — a name alone establishes identity)

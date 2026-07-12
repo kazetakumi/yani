@@ -1,12 +1,7 @@
 """Multi-user workspaces (wayfinder map: multi-user-workspaces, ticket 01):
-which learner's learner home the harness is currently reading/writing.
+which learner's learner home the current HTTP request is reading/writing.
 
 .yani/
-    current_user.txt        the current user's slug, persisted (not a
-                             contextvar or in-memory-only pointer: contextvars
-                             reset per HTTP request, and the dev server's
-                             reload=True wipes module memory on every save —
-                             a file survives both)
     workspace/               the users root: one learner home per subfolder
         <user-slug>/         the learner home (this map's new partition)
             about.md          personal facts about the human as a person —
@@ -17,18 +12,38 @@ which learner's learner home the harness is currently reading/writing.
                                MISSION.md, index.md, concepts/, learning-records/,
                                evidence-log.jsonl, NOTES.md
 
-Exactly one user is current per running server process — local/personal use,
-not concurrent multi-tenant auth (wayfinder map's destination). Every other
-module (workspace.py, state.py, surface_store.py) resolves its paths through
-learner_home() below rather than hardcoding a workspace root, so switching
-the current user redirects all of them at once.
+Identity is resolved per request, not once per server process (decided
+2026-07-12 — see docs/adr/0001-per-request-cookie-identity.md): the current
+user lives in a contextvar, populated at the top of every request from the
+learner's identity cookie (server.py's middleware), not in a file shared by
+the whole process. Starlette gives each request its own asyncio Task, and a
+contextvar set inside one Task is invisible to sibling Tasks, so concurrent
+requests from different learners never see each other's identity. Every
+other module (workspace.py, state.py, surface_store.py) resolves its paths
+through learner_home() below rather than hardcoding a workspace root, so
+setting the current user for a request redirects all of them at once.
 """
 
+import contextvars
 import re
 from pathlib import Path
 
 WORKSPACE_ROOT = Path(".yani") / "workspace"
-CURRENT_USER_FILE = Path(".yani") / "current_user.txt"
+_SLUG_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
+
+_current_user_var: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "current_user", default=None
+)
+
+
+def is_valid_slug(value: str) -> bool:
+    """True iff `value` could only ever have come from slugify() — no '..',
+    no '/', nothing that could escape WORKSPACE_ROOT when joined into a
+    Path. The identity cookie is client-supplied and unvalidated by the
+    browser, so callers that set the current user from a cookie (server.py's
+    middleware) must check this before trusting it; /login's own slugs
+    always pass since slugify()'s output is exactly this pattern."""
+    return bool(_SLUG_RE.fullmatch(value))
 
 
 def slugify(name: str) -> str:
@@ -64,15 +79,11 @@ def resolve_user_slug(name: str) -> str:
 
 
 def current_user() -> str | None:
-    if CURRENT_USER_FILE.exists():
-        slug = CURRENT_USER_FILE.read_text().strip()
-        return slug or None
-    return None
+    return _current_user_var.get()
 
 
-def set_current_user(slug: str):
-    CURRENT_USER_FILE.parent.mkdir(parents=True, exist_ok=True)
-    CURRENT_USER_FILE.write_text(slug)
+def set_current_user(slug: str | None):
+    _current_user_var.set(slug)
 
 
 def learner_home() -> Path:

@@ -2,8 +2,8 @@ import ast
 import json
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi import FastAPI, HTTPException, Request, Response
+from fastapi.responses import JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from .harness import loop
@@ -18,6 +18,33 @@ state = State()
 
 
 app = FastAPI()
+
+# Per-request identity (docs/adr/0001-per-request-cookie-identity.md): the
+# cookie value IS the learner's slug — no server-side session table. There's
+# no auth here (no password), so an opaque token would buy no real security
+# over the slug being readable; it would just add a lookup table that also
+# needs to survive the dev server's reload=True wiping module memory.
+# httponly blocks JS from reading/editing it (XSS hardening; the browser
+# attaches it to fetch() automatically, JS never needs to touch it itself).
+_USER_COOKIE = "yani_user"
+_USER_COOKIE_MAX_AGE = 60 * 60 * 24 * 365  # long-lived: "remember me" per browser
+
+
+@app.middleware("http")
+async def _resolve_user_from_cookie(request: Request, call_next):
+    # Populates users.py's per-request contextvar from the cookie before any
+    # handler runs, so every learner_home() call downstream (workspace.py,
+    # state.py, surface_store.py) resolves to the right learner without
+    # threading the request through each of them individually.
+    #
+    # The cookie is client-supplied and never re-validated by the browser,
+    # unlike /login's slug which always comes from slugify(). A crafted
+    # value like "../../etc" would otherwise reach learner_home()'s
+    # WORKSPACE_ROOT / slug join and escape the workspace root — so only
+    # trust it if it matches slugify()'s own output shape.
+    raw = request.cookies.get(_USER_COOKIE)
+    users.set_current_user(raw if raw and users.is_valid_slug(raw) else None)
+    return await call_next(request)
 
 class ChatRequest(BaseModel):
     message: str
@@ -73,7 +100,19 @@ def login(req: LoginRequest):
     if is_new:
         about_path.write_text(_ABOUT_STARTER_TEMPLATE.format(name=name))
     users.set_current_user(slug)
-    return LoginResponse(user=slug, is_new=is_new)
+    response = JSONResponse(LoginResponse(user=slug, is_new=is_new).model_dump())
+    response.set_cookie(
+        _USER_COOKIE, slug, max_age=_USER_COOKIE_MAX_AGE, httponly=True, samesite="lax"
+    )
+    return response
+
+
+@app.post("/logout")
+def logout():
+    users.set_current_user(None)
+    response = Response(status_code=204)
+    response.delete_cookie(_USER_COOKIE)
+    return response
 
 def _sse_format(event: dict) -> str:
     # SSE wire format: "data: <payload>\n\n" — one blank line ends the event.
