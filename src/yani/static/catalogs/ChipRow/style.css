@@ -1,0 +1,46 @@
+/* ChipRow — checkpoint chips in the paper theme. */
+.chip-row { margin: 0.75rem 0; }
+
+.chip-row-note {
+  font-size: 0.82rem;
+  color: var(--ink-soft, #7a7265);
+  font-style: italic;
+  margin-bottom: 0.45rem;
+}
+
+.chip-row-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.checkpoint-chip {
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--ink, #2f2a24);
+  background: var(--paper, #faf6ee);
+  color: var(--ink, #2f2a24);
+  cursor: pointer;
+  transition: transform 0.06s ease, background 0.12s ease;
+}
+.checkpoint-chip:hover:not(:disabled) { transform: translateY(-1px); }
+
+.checkpoint-chip.primary {
+  background: var(--ink, #2f2a24);
+  color: var(--paper, #faf6ee);
+  font-weight: 600;
+}
+
+.checkpoint-chip.quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--ink-soft, #7a7265);
+  text-decoration: underline dotted;
+  font-size: 0.82rem;
+}
+
+.checkpoint-chip:disabled { opacity: 0.45; cursor: default; }
+.checkpoint-chip.chosen { opacity: 1; outline: 2px solid var(--accent, #2b7a78); }

@@ -1,0 +1,7 @@
+.ui-image { max-width: 100%; border-radius: var(--radius-sm); display: block; }
+.ui-image.icon { width: 24px; height: 24px; }
+.ui-image.avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+.ui-image.smallFeature { max-width: 160px; }
+.ui-image.mediumFeature { max-width: 320px; }
+.ui-image.largeFeature { max-width: 560px; }
+.ui-image.header { width: 100%; max-height: 220px; object-fit: cover; border-radius: var(--radius-md); }

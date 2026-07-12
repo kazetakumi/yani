@@ -1,0 +1,2 @@
+.ui-divider.horizontal { border-top: 1px solid var(--border); align-self: stretch; }
+.ui-divider.vertical { border-left: 1px solid var(--border); align-self: stretch; min-height: var(--space-5); }

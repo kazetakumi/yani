@@ -1,0 +1,30 @@
+/* QuizBlock — the block frame lives in /mentor-blocks.css; these are the
+   radio-MCQ rows (spec 0002 change: MCQ like the original mentor skill). */
+.quiz-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.6rem 0;
+}
+
+.quiz-choice {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+}
+.quiz-choice:hover { background: rgba(255, 255, 255, 0.85); }
+.quiz-choice input { cursor: pointer; }
+
+.quiz-choice.opt-correct {
+  border-color: #2b7a3d;
+  background: rgba(84, 175, 106, 0.14);
+}
+.quiz-choice.opt-wrong {
+  border-color: #b4433a;
+  background: rgba(206, 90, 78, 0.14);
+}

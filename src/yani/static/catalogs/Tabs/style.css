@@ -1,0 +1,17 @@
+.ui-tabs-bar {
+  display: flex;
+  gap: 2px; /* adjacent tabs sit nearly flush on purpose */
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--space-2);
+}
+.ui-tab {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--font-md);
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.ui-tab.active { color: var(--text); border-bottom-color: var(--accent); }

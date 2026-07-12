@@ -1,0 +1,15 @@
+.ui-choice { border: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.ui-choice legend { font-size: var(--font-sm); color: var(--text-muted); padding: 0; margin-bottom: var(--space-1); }
+.ui-choice-option { display: flex; align-items: center; gap: var(--space-2); font-size: var(--font-md); cursor: pointer; }
+.ui-choice.chips { flex-direction: row; flex-wrap: wrap; }
+.ui-choice.chips .ui-choice-option {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3);
+}
+.ui-choice.chips .ui-choice-option:has(input:checked) {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+.ui-choice.chips input { display: none; }
+.ui-choice-filter { max-width: 200px; }

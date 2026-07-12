@@ -1,0 +1,385 @@
+/* The style barrel: shared primitives + one sheet per catalog component,
+   the CSS twin of catalog.js. @import must precede every other rule (CSS
+   spec), so the barrel lives at the top of this file. Adding a component =
+   one folder + one import here. */
+@import url('catalogs/base.css');
+@import url('catalogs/Text/style.css');
+@import url('catalogs/Image/style.css');
+@import url('catalogs/Icon/style.css');
+@import url('catalogs/Video/style.css');
+@import url('catalogs/AudioPlayer/style.css');
+@import url('catalogs/Row/style.css');
+@import url('catalogs/Column/style.css');
+@import url('catalogs/List/style.css');
+@import url('catalogs/Card/style.css');
+@import url('catalogs/Tabs/style.css');
+@import url('catalogs/Modal/style.css');
+@import url('catalogs/Divider/style.css');
+@import url('catalogs/Button/style.css');
+@import url('catalogs/TextField/style.css');
+@import url('catalogs/CheckBox/style.css');
+@import url('catalogs/ChoicePicker/style.css');
+@import url('catalogs/Slider/style.css');
+@import url('catalogs/DateTimeInput/style.css');
+@import url('catalogs/LessonHeader/style.css');
+@import url('catalogs/Heading/style.css');
+@import url('catalogs/Prose/style.css');
+@import url('catalogs/Definition/style.css');
+@import url('catalogs/EquationBlock/style.css');
+@import url('catalogs/FigureSketch/style.css');
+@import url('catalogs/GraphBlock/style.css');
+@import url('catalogs/CodeBlock/style.css');
+@import url('catalogs/DataTable/style.css');
+@import url('catalogs/ExplainBack/style.css');
+@import url('catalogs/PracticeChecklist/style.css');
+@import url('catalogs/QuizBlock/style.css');
+@import url('catalogs/SummaryBlock/style.css');
+@import url('catalogs/TreeLocator/style.css');
+/* Checkpoint components (spec 0002 — the lesson dialogue) */
+@import url('catalogs/ChipRow/style.css');
+@import url('catalogs/PromptInput/style.css');
+/* the lesson blocks' actual styles: one ported sheet (stubs above are comment-only) */
+@import url('mentor-blocks.css');
+
+/* ── PAPER THEME (spec 0001) ──────────────────────────────────
+   The mentor skill's iPad-note aesthetic, app-wide. Single theme
+   by decision — dark mode retired; tokens keep it cheap to add back.
+   Legacy token names (--bg, --text, --border, --accent...) are kept
+   and remapped so the 18 pre-mentor component sheets restyle for free. */
+:root {
+  /* mentor paper tokens (source: mentor.css) */
+  --page-bg:      #fdf8e7;
+  --grid-line:    rgba(140, 155, 190, 0.16);
+  --ink:          #1f3a93;
+  --ink-2:        #2b4aa8;
+  --ink-muted:    #8b9bc7;
+  --warm-rule:    #d8dee8;
+  --warm-accent:  #b98a4e;
+  --highlighter:  #fff3a3;
+
+  --code-bg:      #eef4fb;
+  --code-border:  #6d9fce;
+  --code-label:   #3d7ab5;
+  --code-ink:     #1e3a52;
+
+  --eq-bg:        #ecf6ec;
+  --eq-border:    #6fae6f;
+  --eq-label:     #2d7a2d;
+
+  --fig-bg:       #faf0ed;
+  --fig-border:   #cd8a74;
+  --fig-label:    #a04f36;
+  --block-letter: #a04f36;
+
+  --graph-bg:     #faf6e2;
+  --graph-border: #cbab3a;
+  --graph-label:  #8a6d10;
+
+  --quiz-bg:      #f1eefa;
+  --quiz-border:  #9b7cc8;
+  --quiz-label:   #6b46b8;
+  --quiz-ink:     #2a1a5e;
+
+  --prac-bg:      #e9f6f2;
+  --prac-border:  #55a390;
+  --prac-label:   #2d7d6e;
+  --prac-ink:     #1a4d44;
+
+  --sum-bg:       #2e3440;
+  --sum-ink:      #f5f0e8;
+  --sum-muted:    #d9b98a;
+  --sum-rule:     #4a5364;
+
+  /* the hand-drawn wobble */
+  --sketch: 255px 25px 225px 25px / 25px 225px 25px 255px;
+
+  /* legacy tokens, remapped to paper (pre-mentor sheets read these) */
+  --bg: var(--page-bg);
+  --bg-assistant: rgba(255, 255, 255, 0.55);
+  --text: var(--ink);
+  --text-muted: var(--ink-muted);
+  --border: var(--warm-rule);
+  --accent: var(--warm-accent);
+  --accent-text: #ffffff;
+
+  /* rhythm & shape — component sheets use these, never freehand values */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-pill: 999px;
+  --font-sm: 13px;
+  --font-md: 14px;
+  --font-body: 15px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: 'Neucha', 'Comic Sans MS', cursive;
+  background-color: var(--page-bg);
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 30px 30px;
+  color: var(--ink);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  flex: 0 0 auto;
+  padding: 12px 20px;
+  border-bottom: 2px dashed var(--warm-rule);
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  font-size: 1.4rem;
+  color: var(--warm-accent);
+  background: var(--page-bg);
+}
+
+#chat {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Name-entry gate (ticket 03) — hidden by default via the HTML `hidden`
+   attribute; app.js removes it only on a successful /login. */
+#login-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--page-bg);
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 30px 30px;
+}
+/* The `#login-gate` ID selector above outranks the UA stylesheet's
+   `[hidden] { display: none }` (attribute selector, lower specificity) —
+   without this, app.js setting `.hidden = true` would leave it visually
+   showing despite the attribute being set. Same specificity as the rule
+   above, so source order (this comes after) decides the tie. */
+#login-gate[hidden] {
+  display: none;
+}
+
+#login-gate form {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
+  width: min(320px, 86vw);
+  padding: 28px 24px;
+  border: 2px solid var(--warm-accent);
+  border-radius: var(--sketch);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+#login-gate h1 {
+  margin: 0;
+  text-align: center;
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  font-size: 1.6rem;
+  color: var(--warm-accent);
+}
+
+#login-name {
+  border: none;
+  border-bottom: 2px dashed var(--warm-rule);
+  outline: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 1.1rem;
+  padding: 6px 4px;
+  text-align: center;
+}
+
+#login-gate button {
+  border: none;
+  border-radius: var(--sketch);
+  padding: 10px;
+  background: var(--warm-accent);
+  color: var(--accent-text);
+  font-family: 'Caveat', cursive;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+#login-gate button:disabled { opacity: 0.5; cursor: default; }
+
+.row {
+  display: flex;
+  gap: 16px;
+  padding: 18px max(16px, calc(50% - 380px));
+}
+.row + .row, .ui-surface + .row, .system-notice + .row { border-top: 1px dashed var(--warm-rule); }
+
+.avatar {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 45% 55% 48%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Caveat', cursive;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--accent-text);
+}
+.row.user .avatar { background: var(--ink-muted); }
+.row.assistant .avatar { background: var(--warm-accent); }
+
+.bubble {
+  flex: 1 1 auto;
+  line-height: 1.6;
+  font-size: 1.02rem;
+  white-space: pre-wrap;
+  padding-top: 3px;
+  color: var(--ink-2);
+}
+.row.user .bubble {
+  background: linear-gradient(104deg,
+    transparent 0.5%, rgba(255, 243, 163, 0.55) 2.4%,
+    rgba(255, 243, 163, 0.55) 97%, transparent 98.6%);
+  padding: 2px 10px;
+  flex: 0 1 auto;
+  color: var(--ink);
+}
+
+/* markdown inside assistant bubbles (DOM-built, never innerHTML) */
+.bubble p { margin: 0 0 8px; white-space: normal; }
+.bubble p:last-child { margin-bottom: 0; }
+.bubble ul, .bubble ol { margin: 0 0 8px; padding-left: 22px; white-space: normal; }
+.bubble li { margin: 2px 0; }
+.bubble h4, .bubble h5, .bubble h6 {
+  margin: 10px 0 6px;
+  white-space: normal;
+  font-family: 'Caveat', cursive;
+  color: var(--ink);
+}
+.bubble code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72em;
+  background: #f1ede2;
+  border: 1px solid var(--warm-rule);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.bubble pre {
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border: 2px solid var(--code-border);
+  border-radius: 12px;
+  overflow-x: auto;
+  background: var(--code-bg);
+}
+.bubble pre code { background: none; border: none; padding: 0; }
+.bubble a { color: var(--code-label); }
+
+#composer {
+  flex: 0 0 auto;
+  padding: 14px max(16px, calc(50% - 380px)) 20px;
+  border-top: 2px dashed var(--warm-rule);
+  background: var(--page-bg);
+}
+
+#composer form {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  border: 2px solid var(--warm-accent);
+  border-radius: var(--sketch);
+  padding: 10px 10px 10px 18px;
+  background: rgba(255, 255, 255, 0.75);
+}
+
+#msg {
+  flex: 1 1 auto;
+  border: none;
+  outline: none;
+  resize: none;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 1.02rem;
+  line-height: 1.4;
+  max-height: 160px;
+}
+
+#send {
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 50% 45% 55% 48%;
+  border: none;
+  background: var(--warm-accent);
+  color: var(--accent-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+#send:disabled { opacity: 0.4; cursor: default; }
+#send svg { width: 16px; height: 16px; }
+
+.placeholder {
+  margin: auto;
+  color: var(--ink-muted);
+  font-family: 'Caveat', cursive;
+  font-size: 1.3rem;
+}
+
+/* --- engine-owned generative UI chrome (renderers never emit these) --- */
+
+.ui-surface {
+  padding: 10px max(16px, calc(50% - 380px)) 14px;
+}
+.ui-surface.empty {
+  min-height: 42px;
+  background:
+    linear-gradient(90deg, transparent, rgba(255, 243, 163, 0.5), transparent);
+  background-size: 200% 100%;
+  animation: surface-loading 1.2s ease-in-out infinite;
+}
+@keyframes surface-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.ui-error {
+  color: #b3261e;
+  font-size: var(--font-sm);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.status-indicator {
+  padding: 8px max(16px, calc(50% - 380px));
+  color: var(--ink-muted);
+  font-family: 'Caveat', cursive;
+  font-size: 1.15rem;
+  animation: status-pulse 1.4s ease-in-out infinite;
+}
+@keyframes status-pulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 1; }
+}
+
+.system-notice {
+  padding: 8px max(16px, calc(50% - 380px));
+  color: var(--ink-muted);
+  font-family: 'Caveat', cursive;
+  font-size: 1.05rem;
+}

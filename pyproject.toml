@@ -1,0 +1,21 @@
+[project]
+name = "yani"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [{ name = "kaze", email = "kazetakumi.dev@gmail.com" }]
+requires-python = ">=3.11"
+dependencies = [
+    "python-dotenv>=1.2.2",
+    "fastapi>=0.139.0",
+    "pydantic>=2.13.4",
+    "uvicorn>=0.50.0",
+    "openai>=2.44.0",
+]
+
+[project.scripts]
+server = "yani.server:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

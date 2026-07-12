@@ -1,0 +1,9 @@
+/* PromptInput — inherits the practice-block paper look; only the row is new. */
+.prompt-input-text { font-weight: 600; }
+
+.prompt-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.4rem;
+}

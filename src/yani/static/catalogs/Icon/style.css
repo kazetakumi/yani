@@ -1,0 +1,2 @@
+.ui-icon { font-size: 18px; line-height: 1; } /* glyph size, not text — deliberately off the type scale */
+.ui-icon.unknown { font-family: ui-monospace, monospace; font-size: var(--font-sm); color: var(--text-muted); }

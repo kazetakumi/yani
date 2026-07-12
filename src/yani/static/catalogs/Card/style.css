@@ -1,0 +1,9 @@
+.ui-card {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+  width: fit-content;
+  min-width: 220px;
+  max-width: 100%;
+}

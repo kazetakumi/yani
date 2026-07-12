@@ -1,0 +1,18 @@
+.ui-button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: fit-content;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--font-md);
+  padding: var(--space-2) var(--space-4);
+  cursor: pointer;
+}
+.ui-button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.ui-button.borderless { border-color: transparent; background: none; }
+.ui-button .ui-text { margin: 0; font-size: var(--font-md); }
+.ui-button.primary .ui-text { color: inherit; } /* theme inheritance, per the spec's contrast rule */

@@ -1,0 +1,26 @@
+/* Shared primitives used by several components' renderers — the client
+   twin of the server's ui_catalog/base.py. Component-specific rules live
+   in each catalogs/<Name>/style.css; every value here and there comes
+   from the rhythm/shape tokens in style.css :root, never freehand. */
+
+.ui-field { display: flex; flex-direction: column; gap: var(--space-1); max-width: 420px; }
+.ui-field-label { font-size: var(--font-sm); color: var(--text-muted); }
+.ui-input {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--font-md);
+  padding: var(--space-2) var(--space-3);
+}
+
+.ui-image-placeholder, .ui-media-placeholder {
+  padding: var(--space-4);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-sm);
+  text-align: center;
+}
+
+.pending { color: var(--text-muted); opacity: 0.6; }

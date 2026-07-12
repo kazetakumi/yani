@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yani</title>
+
+<!-- Fonts — the mentor paper hand (Caveat headings, Neucha body, JetBrains Mono code) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=JetBrains+Mono:ital,wght@0,400;0,500;1,400&family=Neucha&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="/style.css">
+
+<!-- MathJax — equations in lesson blocks (sanctioned library #1, pinned + SRI) -->
+<script>window.MathJax = { tex: { inlineMath: [['\\(', '\\)']] } };</script>
+<script async src="https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-chtml.js"
+        integrity="sha384-AHAnt9ZhGeHIrydA1Kp1L7FN+2UosbF7RQg6C+9Is/a7kDpQ1684C2iH2VWil6r4"
+        crossorigin="anonymous"></script>
+
+<!-- Chart.js — live graphs in lesson blocks (sanctioned library #2, pinned + SRI) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"
+        integrity="sha384-vsrfeLOOY6KuIYKDlmVH5UiBmgIdB1oEf7p01YgWHuqmOHfZr374+odEv96n9tNC"
+        crossorigin="anonymous"></script>
+
+<!-- sketch.js — house code, hand-drawn SVG figures -->
+<script src="/sketch.js"></script>
+</head>
+<body>
+
+<header>Yani — your mentor</header>
+
+<!-- Name-entry gate (multi-user-workspaces map, ticket 03): shown only when
+     app.js's /whoami check finds no current user. Plain overlay, not the
+     UI-catalog Modal component — that one's data-driven through the surface
+     store for in-lesson use; this gate exists before any surface does. -->
+<div id="login-gate" hidden>
+  <form id="login-form">
+    <h1>Who's learning today?</h1>
+    <input id="login-name" type="text" placeholder="Your name" autocomplete="off" required>
+    <button type="submit">Start</button>
+  </form>
+</div>
+
+<div id="chat">
+  <div class="placeholder">What would you like to learn?</div>
+</div>
+
+<div id="composer">
+  <form id="composer-form">
+    <textarea id="msg" rows="1" placeholder="Message Yani…"></textarea>
+    <button id="send" type="submit" aria-label="Send">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 19V5M5 12l7-7 7 7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </form>
+</div>
+
+<script type="module" src="/app.js"></script>
+
+</body>
+</html>

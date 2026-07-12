@@ -1,0 +1,95 @@
+"""Multi-user workspaces (wayfinder map: multi-user-workspaces, ticket 01):
+which learner's learner home the harness is currently reading/writing.
+
+.yani/
+    current_user.txt        the current user's slug, persisted (not a
+                             contextvar or in-memory-only pointer: contextvars
+                             reset per HTTP request, and the dev server's
+                             reload=True wipes module memory on every save —
+                             a file survives both)
+    workspace/               the users root: one learner home per subfolder
+        <user-slug>/         the learner home (this map's new partition)
+            about.md          personal facts about the human as a person —
+                               distinct from concepts/<slug>/about.md
+            state.json        this learner's chat transcript (state.py)
+            surfaces.json     this learner's UI surface store (surface_store.py)
+            workspace/        CONTEXT.md's existing "Workspace" term, unchanged:
+                               MISSION.md, index.md, concepts/, learning-records/,
+                               evidence-log.jsonl, NOTES.md
+
+Exactly one user is current per running server process — local/personal use,
+not concurrent multi-tenant auth (wayfinder map's destination). Every other
+module (workspace.py, state.py, surface_store.py) resolves its paths through
+learner_home() below rather than hardcoding a workspace root, so switching
+the current user redirects all of them at once.
+"""
+
+import re
+from pathlib import Path
+
+WORKSPACE_ROOT = Path(".yani") / "workspace"
+CURRENT_USER_FILE = Path(".yani") / "current_user.txt"
+
+
+def slugify(name: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "-", name.strip().lower()).strip("-")
+    if not slug:
+        raise ValueError(f"can't derive a slug from {name!r}")
+    return slug
+
+
+def list_users() -> list[str]:
+    if not WORKSPACE_ROOT.exists():
+        return []
+    return sorted(p.name for p in WORKSPACE_ROOT.iterdir() if p.is_dir())
+
+
+def resolve_user_slug(name: str) -> str:
+    """Slugify `name` and fuzzy-match it against existing learner homes (same
+    dash-stripped convention as workspace.py's concept resolver) so a
+    re-typed name reliably lands on the same learner home even if punctuation
+    slugifies slightly differently. Returns the fresh slug, unmatched, if
+    this is a brand-new name — the caller decides whether that means
+    "create a new learner home"."""
+    candidate = slugify(name)
+    existing = list_users()
+    if candidate in existing:
+        return candidate
+    norm = candidate.replace("-", "")
+    for slug in existing:
+        slug_norm = slug.replace("-", "")
+        if norm == slug_norm or norm in slug_norm or slug_norm in norm:
+            return slug
+    return candidate
+
+
+def current_user() -> str | None:
+    if CURRENT_USER_FILE.exists():
+        slug = CURRENT_USER_FILE.read_text().strip()
+        return slug or None
+    return None
+
+
+def set_current_user(slug: str):
+    CURRENT_USER_FILE.parent.mkdir(parents=True, exist_ok=True)
+    CURRENT_USER_FILE.write_text(slug)
+
+
+def learner_home() -> Path:
+    """The current user's learner home directory. Raises if no user is set
+    yet: every caller sits behind the login gate (map tickets 02/03), so a
+    missing current user here is a bug in the caller, not a state to
+    tolerate — there is deliberately no "default workspace" fallback."""
+    slug = current_user()
+    if slug is None:
+        raise RuntimeError("no current user set — call set_current_user first")
+    return WORKSPACE_ROOT / slug
+
+
+def ensure_learner_home(slug: str) -> Path:
+    """Scaffold a brand-new learner home's directories (idempotent). Does not
+    touch about.md content — that's ticket 02 (starter file) and ticket 04
+    (the model-facing update tool)."""
+    home = WORKSPACE_ROOT / slug
+    (home / "workspace").mkdir(parents=True, exist_ok=True)
+    return home

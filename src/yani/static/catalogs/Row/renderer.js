@@ -1,0 +1,17 @@
+const JUSTIFY = {
+  start: 'flex-start', center: 'center', end: 'flex-end',
+  spaceBetween: 'space-between', spaceAround: 'space-around',
+  spaceEvenly: 'space-evenly', stretch: 'stretch',
+};
+const ALIGN = { start: 'flex-start', center: 'center', end: 'flex-end', stretch: 'stretch' };
+
+export function render(props, ctx) {
+  const el = document.createElement('div');
+  el.className = 'ui-row';
+  if (JUSTIFY[props.justify]) el.style.justifyContent = JUSTIFY[props.justify];
+  if (ALIGN[props.align]) el.style.alignItems = ALIGN[props.align];
+  for (const childId of props.children ?? []) {
+    el.appendChild(ctx.renderChild(childId));
+  }
+  return el;
+}
