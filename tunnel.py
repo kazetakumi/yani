@@ -33,6 +33,7 @@ def _server_ready(port: int) -> bool:
 def main() -> None:
     server_proc: subprocess.Popen | None = None
     tunnel_proc: subprocess.Popen | None = None
+    log_path: Path | None = None
 
     def _cleanup(*_):
         print("\nStopping tunnel and server...")
@@ -43,6 +44,11 @@ def main() -> None:
                     proc.wait(timeout=5)
                 except subprocess.TimeoutExpired:
                     proc.kill()
+        if log_path is not None:
+            try:
+                log_path.unlink(missing_ok=True)
+            except OSError:
+                pass
         sys.exit(0)
 
     signal.signal(signal.SIGINT, _cleanup)
@@ -94,8 +100,6 @@ def main() -> None:
                 break
         if got_url:
             break
-
-    log_path.unlink(missing_ok=True)
 
     if got_url == WANT_URL:
         print(f"✓ Live at {WANT_URL}")
