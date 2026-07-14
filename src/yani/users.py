@@ -26,9 +26,10 @@ setting the current user for a request redirects all of them at once.
 
 import contextlib
 import contextvars
-import fcntl
 import re
 from pathlib import Path
+
+from filelock import FileLock
 
 WORKSPACE_ROOT = Path(".yani") / "workspace"
 _SLUG_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
@@ -124,9 +125,5 @@ def learner_lock():
     each lock file lives inside that learner's own home directory."""
     home = learner_home()
     home.mkdir(parents=True, exist_ok=True)
-    with open(home / ".lock", "w") as f:
-        fcntl.flock(f, fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(f, fcntl.LOCK_UN)
+    with FileLock(home / ".lock"):
+        yield
