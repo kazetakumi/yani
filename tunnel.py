@@ -1,11 +1,13 @@
 """Cross-platform equivalent of tunnel.sh.
 
-Starts the yani server and exposes it publicly via localtunnel.
-Requests the "yani" subdomain (https://yani.loca.lt) but reports clearly if
-it was already taken and a random subdomain was assigned instead.
+Starts the yani server and exposes it publicly via a Cloudflare Tunnel
+"quick tunnel" (free, no account or domain needed). Quick tunnels don't
+support a fixed subdomain — cloudflared assigns a random
+https://<random-words>.trycloudflare.com URL each run.
 Press Ctrl+C to stop both processes.
 """
 
+import re
 import shutil
 import signal
 import subprocess
@@ -15,9 +17,8 @@ import time
 import urllib.request
 from pathlib import Path
 
-SUBDOMAIN = "yani"
 PORT = 8000
-WANT_URL = f"https://{SUBDOMAIN}.loca.lt"
+TRYCLOUDFLARE_URL_RE = re.compile(r"https://[a-zA-Z0-9-]*\.trycloudflare\.com")
 
 ROOT = Path(__file__).parent
 
@@ -31,6 +32,11 @@ def _server_ready(port: int) -> bool:
 
 
 def main() -> None:
+    # Windows' console defaults to cp1252, which can't encode the ✓/⚠ below —
+    # reconfigure stdout to UTF-8 so this doesn't crash after the tunnel is
+    # already up and the server is running.
+    sys.stdout.reconfigure(encoding="utf-8")
+
     server_proc: subprocess.Popen | None = None
     tunnel_proc: subprocess.Popen | None = None
     log_path: Path | None = None
@@ -77,15 +83,14 @@ def main() -> None:
         server_proc.terminate()
         sys.exit("ERROR: server did not become ready within 15 s")
 
-    print(f"Starting localtunnel, requesting subdomain '{SUBDOMAIN}'...")
-    print("First-time visitors will see a localtunnel interstitial page — that's expected.")
+    print("Starting cloudflared quick tunnel...")
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".log", delete=False) as log_f:
         log_path = Path(log_f.name)
 
     with open(log_path, "w") as log_out:
         tunnel_proc = subprocess.Popen(
-            [npx, "--yes", "localtunnel", "--port", str(PORT), "--subdomain", SUBDOMAIN],
+            [npx, "--yes", "cloudflared", "tunnel", "--url", f"http://127.0.0.1:{PORT}"],
             stdout=log_out,
             stderr=subprocess.STDOUT,
         )
@@ -94,20 +99,16 @@ def main() -> None:
     for _ in range(30):
         time.sleep(0.5)
         text = log_path.read_text(errors="replace")
-        for token in text.split():
-            if token.startswith("https://") and ".loca.lt" in token:
-                got_url = token.rstrip(".,")
-                break
-        if got_url:
+        match = TRYCLOUDFLARE_URL_RE.search(text)
+        if match:
+            got_url = match.group(0)
             break
 
-    if got_url == WANT_URL:
-        print(f"✓ Live at {WANT_URL}")
-    elif got_url:
-        print(f"⚠ '{SUBDOMAIN}' was already taken — got {got_url} instead.")
-        print(f"  Someone else is holding {WANT_URL} right now; re-run later to retry.")
+    if got_url:
+        print(f"✓ Live at {got_url}")
+        print("  (random each run — re-run this script if you need a new one)")
     else:
-        print("⚠ Couldn't read localtunnel's assigned URL — check the output above.")
+        print("⚠ Couldn't read cloudflared's assigned URL — check the output above.")
 
     try:
         server_proc.wait()

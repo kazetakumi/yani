@@ -1,16 +1,13 @@
 #!/usr/bin/env bash
-# Starts the yani server and exposes it publicly via localtunnel (free, no
-# account needed). Requests the "yani" subdomain (https://yani.loca.lt), but
-# localtunnel hands that out first-come-first-served — if someone else is
-# holding it, it silently substitutes a random *.loca.lt URL instead of
-# erroring, so this script watches its actual output and says so clearly
-# rather than leaving you to notice a wrong URL. Ctrl+C stops both.
+# Starts the yani server and exposes it publicly via a Cloudflare Tunnel
+# "quick tunnel" (free, no account or domain needed). Quick tunnels don't
+# support a fixed subdomain — cloudflared assigns a random
+# https://<random-words>.trycloudflare.com URL each run, printed once the
+# tunnel is up. Ctrl+C stops both.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-SUBDOMAIN="yani"
 PORT=8000
-WANT_URL="https://${SUBDOMAIN}.loca.lt"
 TUNNEL_LOG="$(mktemp)"
 
 cleanup() {
@@ -34,32 +31,29 @@ for _ in $(seq 1 30); do
     sleep 0.5
 done
 
-echo "Starting localtunnel, requesting subdomain '$SUBDOMAIN'..."
-echo "First-time visitors will see a localtunnel interstitial page — that's expected."
-# Tee, not a plain background pipe: localtunnel's URL line still needs to
+echo "Starting cloudflared quick tunnel..."
+# Tee, not a plain background pipe: cloudflared's URL line still needs to
 # reach your terminal live, but a copy also needs to land in a file this
 # script can grep — a subshell pipeline can't export $! for the real
 # tunnel process, so PIPESTATUS/direct redirection is used instead.
-npx --yes localtunnel --port "$PORT" --subdomain "$SUBDOMAIN" > >(tee "$TUNNEL_LOG") 2>&1 &
+npx --yes cloudflared tunnel --url "http://127.0.0.1:$PORT" > >(tee "$TUNNEL_LOG") 2>&1 &
 TUNNEL_PID=$!
 
-# Up to ~15s for localtunnel to print "your url is: https://...loca.lt".
+# Up to ~15s for cloudflared to print "https://<random-words>.trycloudflare.com".
 GOT_URL=""
 for _ in $(seq 1 30); do
-    if grep -qo 'https://[a-zA-Z0-9-]*\.loca\.lt' "$TUNNEL_LOG" 2>/dev/null; then
-        GOT_URL="$(grep -o 'https://[a-zA-Z0-9-]*\.loca\.lt' "$TUNNEL_LOG" | head -1)"
+    if grep -qo 'https://[a-zA-Z0-9-]*\.trycloudflare\.com' "$TUNNEL_LOG" 2>/dev/null; then
+        GOT_URL="$(grep -o 'https://[a-zA-Z0-9-]*\.trycloudflare\.com' "$TUNNEL_LOG" | head -1)"
         break
     fi
     sleep 0.5
 done
 
-if [[ "$GOT_URL" == "$WANT_URL" ]]; then
-    echo "✓ Live at $WANT_URL"
-elif [[ -n "$GOT_URL" ]]; then
-    echo "⚠ '$SUBDOMAIN' was already taken by another tunnel — got $GOT_URL instead."
-    echo "  Someone else is holding $WANT_URL right now; re-run this script later to retry."
+if [[ -n "$GOT_URL" ]]; then
+    echo "✓ Live at $GOT_URL"
+    echo "  (random each run — re-run this script if you need a new one)"
 else
-    echo "⚠ Couldn't read localtunnel's assigned URL — check the output above."
+    echo "⚠ Couldn't read cloudflared's assigned URL — check the output above."
 fi
 
 wait "$SERVER_PID" "$TUNNEL_PID"
